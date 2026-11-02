@@ -8,16 +8,21 @@
 <body>
     <main class="container">
         <h1>Cheeky Rip ⚡</h1>
-        <p>Rescue your audio files and feed the TDAH SoundLab 8D spatial matrix.</p>
+        <p>Get your audio files, download them locally, and drop them into the TDAH SoundLab 8D matrix.</p>
+        
         <div class="card">
-            <input type="text" id="urlInput" placeholder="Paste SoundCloud or public audio link...">
-            <button id="ripBtn">Rip & Load Stream</button>
+            <h3>1. Download / Get Your Track</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 1rem;">Paste your link or grab your audio file to process locally on your machine.</p>
+            <input type="text" id="urlInput" placeholder="Paste media link...">
+            <button id="downloadBtn">Prepare Local Download</button>
         </div>
+
         <div class="dropzone" id="dropZone">
-            <p>Or drop local MP3/WAV files here (iTunes Rescue)</p>
-            <input type="file" id="fileInput" accept="audio/*" hidden>
+            <h3>2. Head to SoundLab</h3>
+            <p>Take your downloaded MP3 and load it straight into <a href="https://soundlab--tdah-360.netlify.app/soundlab" target="_blank" style="color: #000; font-weight: bold;">TDAH SoundLab</a> for 8D spatial audio, frequency shifting, and focus blocks.</p>
         </div>
-        <div id="statusLog" class="status">Status: Idle</div>
+
+        <div id="statusLog" class="status">Status: Ready</div>
     </main>
     <script src="js/app.js"></script>
 </body>

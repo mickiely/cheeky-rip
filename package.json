@@ -1,15 +1,9 @@
 {
   "name": "cheeky-rip",
   "version": "1.0.0",
-  "description": "Open-source audio extractor and local file rescue bridge for TDAH SoundLab",
-  "main": "server.js",
+  "description": "Client-side audio download utility for TDAH SoundLab",
+  "main": "index.html",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5",
-    "yt-dlp-exec": "^2.5.3"
+    "build": "echo 'Static site ready'"
   }
 }
