@@ -18,7 +18,9 @@ export default function App() {
   const [isRipping, setIsRipping] = useState(false)
   const [url, setUrl] = useState('')
   const [source, setSource] = useState<AudioSource | null>(null)
+  const dropZoneRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [needsFile, setNeedsFile] = useState(false)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState<string[]>(['> Worker ready. Awaiting source input.'])
 
@@ -32,6 +34,7 @@ export default function App() {
       return
     }
 
+    setNeedsFile(false)
     const objectUrl = URL.createObjectURL(file)
     setSource({ name: file.name, url: objectUrl, kind: 'LOCAL FILE' })
     setProgress(100)
@@ -58,6 +61,7 @@ export default function App() {
     const controller = new AbortController()
     requestRef.current = controller
     setIsRipping(true)
+    setNeedsFile(false)
     setSource(null)
     setProgress(0)
     setStatus(['> Resolving public audio source...'])
@@ -66,11 +70,19 @@ export default function App() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }), signal: controller.signal,
       })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Extraction failed.')
+      if (!response.ok || !response.headers.get('content-type')?.startsWith('audio/')) {
+        // Read as text first: a missing function or proxy error can return an empty or HTML body.
+        const body = await response.text()
+        let result: { error?: string; message?: string; requiresDirectAudio?: boolean } = {}
+        try { result = JSON.parse(body) } catch { /* non-JSON body */ }
+        if (result.requiresDirectAudio) {
+          setNeedsFile(true)
+          dropZoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        throw new Error(result.message || result.error || (response.status === 404
+          ? 'Rip service not found. Run `npm run dev` or `netlify dev` so /.netlify/functions/rip is served.'
+          : `Rip service returned ${response.status} without audio.`))
       }
-      if (!response.headers.get('content-type')?.startsWith('audio/')) throw new Error('Source did not return audio.')
       const reader = response.body?.getReader()
       if (!reader) throw new Error('Audio stream unavailable.')
       const total = Number(response.headers.get('content-length'))
@@ -98,6 +110,16 @@ export default function App() {
       requestRef.current = null
       setIsRipping(false)
     }
+  }
+
+  // SoundLab has no cross-origin import API, so save the blob locally while the link opens SoundLab in a new tab.
+  const handOffToSoundLab = () => {
+    if (!source) return
+    const link = document.createElement('a')
+    link.href = source.url
+    link.download = source.name
+    link.click()
+    setStatus((lines) => [...lines.slice(-2), `> Saved ${source.name}. Load it in SoundLab for 8D spatial processing.`])
   }
 
   return (
@@ -165,7 +187,8 @@ export default function App() {
 
           <input ref={fileInputRef} className="visually-hidden" type="file" accept="audio/mpeg,audio/wav,audio/x-wav" onChange={handleFiles} />
           <div
-            className={`drop-zone ${isDragging ? 'is-dragging' : ''}`}
+            ref={dropZoneRef}
+            className={`drop-zone ${isDragging || needsFile ? 'is-dragging' : ''}`}
             onDragOver={(event) => { event.preventDefault(); setIsDragging(true) }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
@@ -225,8 +248,9 @@ export default function App() {
                 href="https://soundlab--tdah-360.netlify.app/soundlab"
                 target="_blank"
                 rel="noreferrer"
+                onClick={handOffToSoundLab}
               >
-                OPEN IN TDAH SOUNDLAB <span aria-hidden="true">↗</span>
+                {source ? 'SAVE + OPEN IN SOUNDLAB' : 'OPEN IN TDAH SOUNDLAB'} <span aria-hidden="true">↗</span>
               </a>
             </div>
           </div>
